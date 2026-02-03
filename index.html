@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Budget Buddy</title>
+  <meta name="description" content="A calm, Apple-inspired budgeting web app." />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app" id="app">
+    <header class="app-header">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true">◍</div>
+        <div class="brand-text">
+          <h1>Budget Buddy</h1>
+          <p class="subtitle">Clarity in under 5 seconds.</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button class="btn ghost" id="openSettings" aria-haspopup="dialog">Preferences</button>
+        <button class="btn primary" id="openAddExpense">Add expense</button>
+      </div>
+    </header>
+
+    <main class="main">
+      <section class="card onboarding" id="onboarding" aria-live="polite">
+        <h2>Let’s set up your budget</h2>
+        <p class="muted">No account required. Your data stays on this device.</p>
+        <form id="onboardingForm">
+          <div class="field">
+            <label for="income" id="incomeLabel">Monthly income</label>
+            <input type="number" id="income" name="income" min="0" step="0.01" placeholder="0" required />
+          </div>
+
+          <div class="field">
+            <label for="incomeFrequency">Income frequency</label>
+            <select id="incomeFrequency" name="incomeFrequency">
+              <option value="monthly" selected>Monthly</option>
+              <option value="biweekly">Bi-weekly</option>
+            </select>
+          </div>
+
+          <div class="field" id="onboardingStartDateField">
+            <label for="incomeStartDate">Pay schedule start date</label>
+            <input type="date" id="incomeStartDate" name="incomeStartDate" />
+          </div>
+
+          <div class="field">
+            <label>Main categories</label>
+            <div class="chips" id="categoryChips" role="group" aria-label="Main categories"></div>
+            <p class="hint">You can edit these anytime.</p>
+          </div>
+          <div class="field">
+            <label for="newCategoryName">Add a category</label>
+            <div class="inline-field">
+              <input type="text" id="newCategoryName" name="newCategoryName" placeholder="e.g. Travel" />
+              <input type="number" id="newCategoryLimit" name="newCategoryLimit" min="0" step="0.01" placeholder="Limit" />
+              <button class="btn ghost" type="button" id="addCategoryBtn">Add</button>
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="goal">Financial goal (optional)</label>
+            <select id="goal" name="goal">
+              <option value="">Just track</option>
+              <option value="save">Save more</option>
+              <option value="spend">Spend less</option>
+              <option value="debt">Pay off debt</option>
+            </select>
+          </div>
+
+          <button type="submit" class="btn primary full">Start budgeting</button>
+        </form>
+      </section>
+
+      <section class="card dashboard" id="dashboard" aria-live="polite" hidden>
+        <div class="dashboard-header">
+          <div>
+            <h2 id="periodTitle">This month</h2>
+            <p class="muted" id="monthLabel"></p>
+          </div>
+          <div class="period-controls" aria-label="Period navigation">
+            <button class="btn ghost" type="button" id="prevPeriod" aria-label="Previous period">◀</button>
+            <button class="btn ghost" type="button" id="nextPeriod" aria-label="Next period">▶</button>
+          </div>
+          <div class="status-pill" id="statusPill">You’re on track</div>
+        </div>
+
+        <div class="overview">
+          <div class="overview-item">
+            <p class="label">Income</p>
+            <p class="value" id="totalIncome">$0</p>
+          </div>
+          <div class="overview-item">
+            <p class="label">Spent</p>
+            <p class="value" id="totalSpent">$0</p>
+          </div>
+          <div class="overview-item">
+            <p class="label">Remaining</p>
+            <p class="value" id="totalRemaining">$0</p>
+          </div>
+        </div>
+
+        <div class="category-list" id="categoryList" aria-label="Budget categories"></div>
+      </section>
+
+      <section class="card transactions" id="transactions" hidden>
+        <div class="section-header">
+          <h2>Transactions</h2>
+          <div class="filters">
+            <input type="search" id="searchInput" placeholder="Search" aria-label="Search transactions" />
+            <select id="filterCategory" aria-label="Filter by category"></select>
+          </div>
+        </div>
+        <div class="transaction-list" id="transactionList" aria-live="polite"></div>
+      </section>
+
+      <section class="card insights" id="insights" hidden>
+        <div class="section-header">
+          <h2>Insights</h2>
+          <p class="muted">Plain-language trends.</p>
+        </div>
+        <div id="insightCards" class="insight-cards"></div>
+      </section>
+
+      <section class="card goals" id="goals" hidden>
+        <div class="section-header">
+          <h2>Goals</h2>
+          <p class="muted">Encouraging progress, no pressure.</p>
+        </div>
+        <div id="goalCards" class="goal-cards"></div>
+      </section>
+
+      <section class="card data-tools" id="dataTools" hidden>
+        <div class="section-header">
+          <h2>Data</h2>
+          <p class="muted">You own your data.</p>
+        </div>
+        <div class="data-actions">
+          <button class="btn ghost" id="exportCsv">Export CSV</button>
+          <button class="btn ghost" id="exportJson">Local backup</button>
+          <label class="btn ghost" for="importJson">Import backup</label>
+          <input type="file" id="importJson" accept="application/json" hidden />
+        </div>
+        <p class="fine-print">Your data stays on this device unless you export it.</p>
+      </section>
+    </main>
+  </div>
+
+  <dialog id="expenseDialog" aria-labelledby="expenseDialogTitle">
+    <form method="dialog" id="expenseForm">
+      <div class="dialog-header">
+        <h3 id="expenseDialogTitle">Add expense</h3>
+        <button class="icon-btn" type="button" id="closeExpense" aria-label="Close">✕</button>
+      </div>
+      <div class="field">
+        <label for="expenseAmount">Amount</label>
+        <input type="number" id="expenseAmount" name="amount" min="0" step="0.01" required />
+      </div>
+      <div class="field">
+        <label for="expenseCategory">Category</label>
+        <select id="expenseCategory" name="category" required></select>
+      </div>
+      <div class="field">
+        <label for="expenseNote">Note (optional)</label>
+        <input type="text" id="expenseNote" name="note" maxlength="60" placeholder="What was this for?" />
+      </div>
+      <div class="field">
+        <label for="expenseDate">Date</label>
+        <input type="date" id="expenseDate" name="date" required />
+      </div>
+      <div class="dialog-actions">
+        <button class="btn ghost" type="button" id="deleteExpense">Delete</button>
+        <button class="btn primary" type="submit" id="saveExpense">Save</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="settingsDialog" aria-labelledby="settingsTitle">
+    <form method="dialog" id="settingsForm">
+      <div class="dialog-header">
+        <h3 id="settingsTitle">Preferences</h3>
+        <button class="icon-btn" type="button" id="closeSettings" aria-label="Close">✕</button>
+      </div>
+      <div class="field">
+        <label for="accentColor">Accent color</label>
+        <input type="color" id="accentColor" name="accentColor" />
+      </div>
+      <div class="field">
+        <label for="settingsIncome">Income amount</label>
+        <input type="number" id="settingsIncome" name="settingsIncome" min="0" step="0.01" />
+      </div>
+      <div class="field">
+        <label for="settingsFrequency">Income frequency</label>
+        <select id="settingsFrequency" name="settingsFrequency">
+          <option value="monthly">Monthly</option>
+          <option value="biweekly">Bi-weekly</option>
+        </select>
+      </div>
+      <div class="field" id="settingsStartDateField">
+        <label for="settingsStartDate">Pay schedule start date</label>
+        <input type="date" id="settingsStartDate" name="settingsStartDate" />
+      </div>
+      <div class="field">
+        <label for="settingsCategoryName">Add a category</label>
+        <div class="inline-field">
+          <input type="text" id="settingsCategoryName" name="settingsCategoryName" placeholder="e.g. Travel" />
+          <input type="number" id="settingsCategoryLimit" name="settingsCategoryLimit" min="0" step="0.01" placeholder="Limit" />
+          <button class="btn ghost" type="button" id="settingsAddCategory">Add</button>
+        </div>
+      </div>
+      <div class="field">
+        <label for="fontScale">Font size</label>
+        <select id="fontScale" name="fontScale">
+          <option value="0.95">Small</option>
+          <option value="1" selected>Default</option>
+          <option value="1.1">Large</option>
+          <option value="1.2">Extra large</option>
+        </select>
+      </div>
+      <div class="field">
+        <label class="switch">
+          <input type="checkbox" id="highContrast" />
+          <span class="slider" aria-hidden="true"></span>
+          High contrast mode
+        </label>
+      </div>
+      <div class="field">
+        <label class="switch">
+          <input type="checkbox" id="darkMode" />
+          <span class="slider" aria-hidden="true"></span>
+          Dark mode
+        </label>
+      </div>
+      <div class="field">
+        <label>Reset</label>
+        <button class="btn ghost" type="button" id="resetApp">Start over</button>
+        <p class="hint">This clears all data on this device.</p>
+      </div>
+      <div class="dialog-actions">
+        <button class="btn primary" type="submit">Save</button>
+      </div>
+    </form>
+  </dialog>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script src="app.js" defer></script>
+</body>
+</html>
