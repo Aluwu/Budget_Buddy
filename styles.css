@@ -451,7 +451,7 @@ dialog::backdrop {
   background: rgba(0, 0, 0, 0.35);
 }
 
-#expenseForm, #settingsForm {
+#expenseForm, #settingsForm, #editCategoryForm {
   padding: 20px;
 }
 

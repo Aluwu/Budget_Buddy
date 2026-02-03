@@ -244,6 +244,27 @@
     </form>
   </dialog>
 
+  <dialog id="editCategoryDialog" aria-labelledby="editCategoryTitle">
+    <form method="dialog" id="editCategoryForm">
+      <div class="dialog-header">
+        <h3 id="editCategoryTitle">Edit category</h3>
+        <button class="icon-btn" type="button" id="closeEditCategory" aria-label="Close">✕</button>
+      </div>
+      <div class="field">
+        <label for="editCategoryName">Category name</label>
+        <input type="text" id="editCategoryName" name="editCategoryName" required />
+      </div>
+      <div class="field">
+        <label for="editCategoryLimit">Monthly limit</label>
+        <input type="number" id="editCategoryLimit" name="editCategoryLimit" min="0" step="0.01" />
+      </div>
+      <div class="dialog-actions">
+        <button class="btn ghost" type="button" id="cancelEditCategory">Cancel</button>
+        <button class="btn primary" type="submit">Save</button>
+      </div>
+    </form>
+  </dialog>
+
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
   <script src="app.js" defer></script>

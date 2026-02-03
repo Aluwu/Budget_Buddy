@@ -61,6 +61,12 @@ const ui = {
   settingsDialog: document.getElementById("settingsDialog"),
   settingsForm: document.getElementById("settingsForm"),
   closeSettings: document.getElementById("closeSettings"),
+  editCategoryDialog: document.getElementById("editCategoryDialog"),
+  editCategoryForm: document.getElementById("editCategoryForm"),
+  editCategoryName: document.getElementById("editCategoryName"),
+  editCategoryLimit: document.getElementById("editCategoryLimit"),
+  closeEditCategory: document.getElementById("closeEditCategory"),
+  cancelEditCategory: document.getElementById("cancelEditCategory"),
   accentColor: document.getElementById("accentColor"),
   settingsIncome: document.getElementById("settingsIncome"),
   settingsFrequency: document.getElementById("settingsFrequency"),
@@ -88,6 +94,7 @@ const ui = {
 };
 
 let editingExpenseId = null;
+let editingCategoryId = null;
 
 const monthFormatter = new Intl.DateTimeFormat(undefined, { month: "long", year: "numeric" });
 const dateFormatter = new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric" });
@@ -500,13 +507,28 @@ const closeExpenseDialog = () => {
 const editCategory = (categoryId) => {
   const category = state.categories.find((cat) => cat.id === categoryId);
   if (!category) return;
-  const name = prompt("Category name", category.name);
+  editingCategoryId = categoryId;
+  ui.editCategoryName.value = category.name;
+  ui.editCategoryLimit.value = Number.isFinite(category.limit) ? category.limit : 0;
+  ui.editCategoryDialog.showModal();
+};
+
+const closeEditCategoryDialog = () => {
+  ui.editCategoryDialog.close();
+};
+
+const handleEditCategorySubmit = (event) => {
+  event.preventDefault();
+  const category = state.categories.find((cat) => cat.id === editingCategoryId);
+  if (!category) return;
+  const name = ui.editCategoryName.value.trim();
   if (!name) return;
-  const limitValue = prompt("Monthly limit", category.limit ?? 0);
-  const limit = Number(limitValue);
+  const limitValue = Number(ui.editCategoryLimit.value);
   category.name = name;
-  category.limit = Number.isFinite(limit) ? limit : category.limit;
+  category.limit = Number.isFinite(limitValue) ? limitValue : category.limit;
   saveAndRender();
+  closeEditCategoryDialog();
+  showToast("Category updated");
 };
 
 const deleteExpense = (expenseId) => {
@@ -755,6 +777,13 @@ const init = () => {
 
   ui.expenseDialog.addEventListener("close", () => {
     editingExpenseId = null;
+  });
+
+  ui.editCategoryForm.addEventListener("submit", handleEditCategorySubmit);
+  ui.closeEditCategory.addEventListener("click", closeEditCategoryDialog);
+  ui.cancelEditCategory.addEventListener("click", closeEditCategoryDialog);
+  ui.editCategoryDialog.addEventListener("close", () => {
+    editingCategoryId = null;
   });
 
   registerServiceWorker();
