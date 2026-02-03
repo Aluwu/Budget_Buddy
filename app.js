@@ -194,15 +194,40 @@ const addSettingsCategory = () => {
 const renderOnboardingChips = (items) => {
   ui.categoryChips.innerHTML = "";
   items.forEach((item) => {
+    const row = document.createElement("div");
+    row.className = "chip-row";
+
     const chip = document.createElement("button");
     chip.type = "button";
     chip.className = `chip ${item.selected ? "active" : ""}`;
     chip.textContent = item.name;
+
+    const limitWrap = document.createElement("div");
+    limitWrap.className = "chip-input";
+
+    const limitInput = document.createElement("input");
+    limitInput.type = "number";
+    limitInput.min = "0";
+    limitInput.step = "0.01";
+    limitInput.value = Number.isFinite(item.limit) ? item.limit : 0;
+    limitInput.placeholder = "Limit";
+    limitInput.setAttribute("aria-label", `${item.name} limit`);
+    limitInput.disabled = !item.selected;
+
     chip.addEventListener("click", () => {
       item.selected = !item.selected;
       chip.classList.toggle("active", item.selected);
+      limitInput.disabled = !item.selected;
     });
-    ui.categoryChips.appendChild(chip);
+
+    limitInput.addEventListener("input", (event) => {
+      const value = Number(event.target.value);
+      item.limit = Number.isFinite(value) ? value : item.limit;
+    });
+
+    limitWrap.appendChild(limitInput);
+    row.append(chip, limitWrap);
+    ui.categoryChips.appendChild(row);
   });
 };
 
