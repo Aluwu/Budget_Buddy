@@ -101,6 +101,10 @@ body {
   width: 100%;
 }
 
+.refresh-status {
+  font-size: 0.85rem;
+}
+
 .main {
   display: grid;
   gap: 20px;

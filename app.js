@@ -1,7 +1,7 @@
 const STORAGE_KEY = "calmBudget_v1";
 const DEFAULT_MONTH_DAY = new Date().getDate();
 const FEEDBACK_EMAIL = "asa.e.mcleod@gmail.com";
-const GITHUB_REPO = "Gingy/Budget_Buddy";
+const GITHUB_REPO = "Aluwu/Budget_Buddy";
 const DEFAULT_CATEGORIES = [
   { name: "Housing", limit: 1200, monthDay: DEFAULT_MONTH_DAY },
   { name: "Food", limit: 450, monthDay: DEFAULT_MONTH_DAY },
@@ -63,6 +63,7 @@ const ui = {
   openAddExpense: document.getElementById("openAddExpense"),
   closeExpense: document.getElementById("closeExpense"),
   refreshApp: document.getElementById("refreshApp"),
+  refreshStatus: document.getElementById("refreshStatus"),
   openSettings: document.getElementById("openSettings"),
   settingsDialog: document.getElementById("settingsDialog"),
   settingsForm: document.getElementById("settingsForm"),
@@ -161,6 +162,24 @@ const showToast = (message) => {
   setTimeout(() => ui.toast.classList.remove("show"), 2200);
 };
 
+const setRefreshStatus = (message) => {
+  if (!ui.refreshStatus) return;
+  ui.refreshStatus.textContent = message || "";
+};
+
+const fetchLatestCommit = async () => {
+  if (!GITHUB_REPO || GITHUB_REPO.includes("YOUR_GITHUB_REPO")) {
+    throw new Error("Repo not set");
+  }
+  const url = `https://api.github.com/repos/${GITHUB_REPO}/commits?per_page=1&t=${Date.now()}`;
+  const response = await fetch(url, { cache: "no-store" });
+  if (!response.ok) {
+    throw new Error("Commit not found");
+  }
+  const data = await response.json();
+  return data[0] || null;
+};
+
 const checkForUpdate = (registration) =>
   new Promise((resolve) => {
     if (registration.waiting) {
@@ -187,13 +206,19 @@ const refreshAppForUpdates = async () => {
     showToast("You will need to be connected to the internet to update the app.");
     return;
   }
+  ui.refreshApp.disabled = true;
+  setRefreshStatus("Checking for updates...");
   if (!("serviceWorker" in navigator)) {
     showToast("You're using the latest version");
+    ui.refreshApp.disabled = false;
+    setRefreshStatus("");
     return;
   }
   const registration = await navigator.serviceWorker.getRegistration();
   if (!registration) {
     showToast("You're using the latest version");
+    ui.refreshApp.disabled = false;
+    setRefreshStatus("");
     return;
   }
   const hadWaiting = !!registration.waiting;
@@ -201,6 +226,11 @@ const refreshAppForUpdates = async () => {
   const updated = await checkForUpdate(registration);
   if (navigator.serviceWorker.controller) {
     navigator.serviceWorker.controller.postMessage({ type: "FORCE_REFRESH" });
+  }
+  try {
+    await fetchLatestCommit();
+  } catch (error) {
+    setRefreshStatus("Could not reach GitHub.");
   }
   if (updated || hadWaiting || registration.waiting) {
     if (registration.waiting) {
@@ -211,6 +241,8 @@ const refreshAppForUpdates = async () => {
     return;
   }
   showToast("You're using the latest version");
+  ui.refreshApp.disabled = false;
+  setRefreshStatus("");
 };
 
 const defaultCategorySelection = () =>
@@ -867,15 +899,8 @@ const openUpdateNotes = () => {
     ui.updateNotesContent.textContent = "Set your GitHub repo in app.js to load update notes.";
     return;
   }
-  fetch(`https://api.github.com/repos/${GITHUB_REPO}/commits?per_page=1`)
-    .then((response) => {
-      if (!response.ok) {
-        throw new Error("Commit not found");
-      }
-      return response.json();
-    })
-    .then((data) => {
-      const commit = data[0];
+  fetchLatestCommit()
+    .then((commit) => {
       if (!commit) {
         ui.updateNotesContent.textContent = "No commits found.";
         return;
