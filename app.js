@@ -477,7 +477,7 @@ const renderDashboard = () => {
   const periodExpenses = filterExpensesForPeriod(period);
   const totalSpent = sumExpenses(periodExpenses);
   const totalCategorySpent = state.categories.reduce(
-    (sum, category) => sum + getCategorySpent(category.id, period),
+    (sum, category) => sum + (category.limit || 0),
     0
   );
   const totalIncome = state.income || 0;
