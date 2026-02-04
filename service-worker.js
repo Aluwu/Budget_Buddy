@@ -1,5 +1,5 @@
-const CACHE_NAME = "calm-budget-static-v1";
-const ASSETS = ["/", "/index.html", "/styles.css", "/app.js"]; 
+const CACHE_NAME = "calm-budget-static-v2";
+const ASSETS = ["/", "/index.html", "/styles.css", "/app.js", "/service-worker.js"]; 
 
 self.addEventListener("install", (event) => {
   event.waitUntil(

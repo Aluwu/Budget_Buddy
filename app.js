@@ -1,6 +1,6 @@
 const STORAGE_KEY = "calmBudget_v1";
 const DEFAULT_MONTH_DAY = new Date().getDate();
-const FEEDBACK_EMAIL = "asa.e.mcleod@gmail.com";
+const FEEDBACK_EMAIL = "budgetbuddyapp404@gmail.com";
 const GITHUB_REPO = "Aluwu/Budget_Buddy";
 const DEFAULT_CATEGORIES = [
   { name: "Housing", limit: 1200, monthDay: DEFAULT_MONTH_DAY },
@@ -113,7 +113,7 @@ let editingCategoryId = null;
 
 const monthFormatter = new Intl.DateTimeFormat(undefined, { month: "long", year: "numeric" });
 const shortDateFormatter = new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric" });
-const dateFormatter = new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric" });
+const dateFormatter = shortDateFormatter;
 
 const formatCurrency = (value) =>
   new Intl.NumberFormat(undefined, { style: "currency", currency: "USD" }).format(value || 0);
