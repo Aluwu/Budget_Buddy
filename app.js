@@ -111,6 +111,7 @@ let editingExpenseId = null;
 let editingCategoryId = null;
 
 const monthFormatter = new Intl.DateTimeFormat(undefined, { month: "long", year: "numeric" });
+const shortDateFormatter = new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric" });
 const dateFormatter = new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric" });
 
 const formatCurrency = (value) =>
@@ -471,13 +472,16 @@ const renderDashboard = () => {
     const spent = getCategorySpent(category.id, period);
     const percent = category.limit ? Math.min(100, (spent / category.limit) * 100) : 0;
     const remaining = (category.limit || 0) - spent;
+    const baseDate = period.start || new Date();
+    const dueDateIso = monthDayToDateValue(category.monthDay, baseDate);
+    const dueDateLabel = shortDateFormatter.format(new Date(dueDateIso));
     const card = document.createElement("div");
     card.className = "category-card";
 
     const info = document.createElement("div");
     info.className = "category-info";
     info.innerHTML = `
-      <div class="category-name">${category.name}</div>
+      <div class="category-name">${category.name} <span class="muted">- ${dueDateLabel}</span></div>
       <div class="progress-bar" role="progressbar" aria-valuenow="${percent.toFixed(0)}" aria-valuemin="0" aria-valuemax="100">
         <div class="progress-fill" style="width: ${percent}%;"></div>
       </div>
