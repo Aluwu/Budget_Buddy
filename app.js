@@ -906,7 +906,9 @@ const openUpdateNotes = () => {
         return;
       }
       const message = commit.commit?.message || "Latest update";
-      ui.updateNotesContent.textContent = message;
+      const dateRaw = commit.commit?.author?.date || new Date().toISOString();
+      const dateLabel = new Date(dateRaw).toLocaleDateString();
+      ui.updateNotesContent.textContent = `${message} — ${dateLabel}`;
     })
     .catch(() => {
       ui.updateNotesContent.textContent = "Could not load update notes. Check your repository settings.";
