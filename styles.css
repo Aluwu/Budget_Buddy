@@ -142,8 +142,9 @@ body {
 
 .inline-field {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
   gap: 10px;
+  align-items: center;
 }
 
 .inline-field .btn {
@@ -191,6 +192,11 @@ input:focus, select:focus {
   color: var(--text);
 }
 
+.btn.danger {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
 .btn.full {
   width: 100%;
 }
@@ -213,6 +219,7 @@ input:focus, select:focus {
   display: flex;
   align-items: center;
   gap: 10px;
+  flex-wrap: wrap;
 }
 
 .chip-input input {
@@ -336,8 +343,28 @@ input:focus, select:focus {
 .progress-meta {
   display: flex;
   justify-content: space-between;
+  gap: 12px;
   font-size: 0.85rem;
   color: var(--muted);
+}
+
+.chip-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.chip-inputs {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.update-notes {
+  padding: 12px 4px 4px;
+  color: var(--text);
+  white-space: pre-wrap;
+  max-height: 360px;
+  overflow: auto;
 }
 
 .category-action {

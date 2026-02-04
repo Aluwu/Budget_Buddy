@@ -1,11 +1,14 @@
 const STORAGE_KEY = "calmBudget_v1";
+const DEFAULT_MONTH_DAY = new Date().getDate();
+const FEEDBACK_EMAIL = "asa.e.mcleod@gmail.com";
+const GITHUB_REPO = "Gingy/Budget_Buddy";
 const DEFAULT_CATEGORIES = [
-  { name: "Housing", limit: 1200 },
-  { name: "Food", limit: 450 },
-  { name: "Transport", limit: 220 },
-  { name: "Health", limit: 160 },
-  { name: "Utilities", limit: 180 },
-  { name: "Fun", limit: 200 }
+  { name: "Housing", limit: 1200, monthDay: DEFAULT_MONTH_DAY },
+  { name: "Food", limit: 450, monthDay: DEFAULT_MONTH_DAY },
+  { name: "Transport", limit: 220, monthDay: DEFAULT_MONTH_DAY },
+  { name: "Health", limit: 160, monthDay: DEFAULT_MONTH_DAY },
+  { name: "Utilities", limit: 180, monthDay: DEFAULT_MONTH_DAY },
+  { name: "Fun", limit: 200, monthDay: DEFAULT_MONTH_DAY }
 ];
 
 const state = {
@@ -31,6 +34,7 @@ const ui = {
   incomeLabel: document.getElementById("incomeLabel"),
   newCategoryName: document.getElementById("newCategoryName"),
   newCategoryLimit: document.getElementById("newCategoryLimit"),
+  newCategoryMonthDay: document.getElementById("newCategoryMonthDay"),
   addCategoryBtn: document.getElementById("addCategoryBtn"),
   categoryChips: document.getElementById("categoryChips"),
   dashboard: document.getElementById("dashboard"),
@@ -41,6 +45,7 @@ const ui = {
   totalIncome: document.getElementById("totalIncome"),
   totalSpent: document.getElementById("totalSpent"),
   totalRemaining: document.getElementById("totalRemaining"),
+  totalCategorySpent: document.getElementById("totalCategorySpent"),
   statusPill: document.getElementById("statusPill"),
   categoryList: document.getElementById("categoryList"),
   transactions: document.getElementById("transactions"),
@@ -65,15 +70,18 @@ const ui = {
   editCategoryForm: document.getElementById("editCategoryForm"),
   editCategoryName: document.getElementById("editCategoryName"),
   editCategoryLimit: document.getElementById("editCategoryLimit"),
+  editCategoryMonthDay: document.getElementById("editCategoryMonthDay"),
   closeEditCategory: document.getElementById("closeEditCategory"),
   cancelEditCategory: document.getElementById("cancelEditCategory"),
   accentColor: document.getElementById("accentColor"),
+  applyAccent: document.getElementById("applyAccent"),
   settingsIncome: document.getElementById("settingsIncome"),
   settingsFrequency: document.getElementById("settingsFrequency"),
   settingsStartDate: document.getElementById("settingsStartDate"),
   settingsStartDateField: document.getElementById("settingsStartDateField"),
   settingsCategoryName: document.getElementById("settingsCategoryName"),
   settingsCategoryLimit: document.getElementById("settingsCategoryLimit"),
+  settingsCategoryMonthDay: document.getElementById("settingsCategoryMonthDay"),
   settingsAddCategory: document.getElementById("settingsAddCategory"),
   resetApp: document.getElementById("resetApp"),
   fontScale: document.getElementById("fontScale"),
@@ -90,6 +98,11 @@ const ui = {
   exportCsv: document.getElementById("exportCsv"),
   exportJson: document.getElementById("exportJson"),
   importJson: document.getElementById("importJson"),
+  submitFeedback: document.getElementById("submitFeedback"),
+  openUpdateNotes: document.getElementById("openUpdateNotes"),
+  updateNotesDialog: document.getElementById("updateNotesDialog"),
+  updateNotesContent: document.getElementById("updateNotesContent"),
+  closeUpdateNotes: document.getElementById("closeUpdateNotes"),
   toast: document.getElementById("toast")
 };
 
@@ -160,24 +173,49 @@ const toggleStartDateFields = (frequency) => {
 
 const normalizeName = (name) => name.trim().toLowerCase();
 
-const createCategory = (name, limit) => ({
+const normalizeMonthDay = (value, baseDate = new Date()) => {
+  const day = Number(value);
+  const lastDay = new Date(baseDate.getFullYear(), baseDate.getMonth() + 1, 0).getDate();
+  if (!Number.isFinite(day)) return Math.min(DEFAULT_MONTH_DAY, lastDay);
+  return Math.min(lastDay, Math.max(1, Math.round(day)));
+};
+
+const getMonthDayFromDateString = (value, baseDate = new Date()) => {
+  if (!value) return normalizeMonthDay(DEFAULT_MONTH_DAY, baseDate);
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return normalizeMonthDay(DEFAULT_MONTH_DAY, baseDate);
+  return normalizeMonthDay(parsed.getDate(), parsed);
+};
+
+const monthDayToDateValue = (day, baseDate = new Date()) => {
+  const safeDay = normalizeMonthDay(day, baseDate);
+  const year = baseDate.getFullYear();
+  const month = baseDate.getMonth();
+  const result = new Date(year, month, safeDay);
+  return result.toISOString().slice(0, 10);
+};
+
+const createCategory = (name, limit, monthDay) => ({
   id: generateId(),
   name: name.trim(),
-  limit: Number.isFinite(limit) ? limit : 0
+  limit: Number.isFinite(limit) ? limit : 0,
+  monthDay: normalizeMonthDay(monthDay)
 });
 
 const addOnboardingCategory = () => {
   const name = ui.newCategoryName.value.trim();
   const limitValue = Number(ui.newCategoryLimit.value);
+  const monthDayValue = getMonthDayFromDateString(ui.newCategoryMonthDay.value);
   if (!name) return;
   const exists = onboardingCategories.some((cat) => normalizeName(cat.name) === normalizeName(name));
   if (exists) {
     showToast("Category already exists");
     return;
   }
-  onboardingCategories.push({ ...createCategory(name, limitValue), selected: true });
+  onboardingCategories.push({ ...createCategory(name, limitValue, monthDayValue), selected: true });
   ui.newCategoryName.value = "";
   ui.newCategoryLimit.value = "";
+  ui.newCategoryMonthDay.value = "";
   renderOnboardingChips(onboardingCategories);
   showToast("Category added");
 };
@@ -185,15 +223,17 @@ const addOnboardingCategory = () => {
 const addSettingsCategory = () => {
   const name = ui.settingsCategoryName.value.trim();
   const limitValue = Number(ui.settingsCategoryLimit.value);
+  const monthDayValue = getMonthDayFromDateString(ui.settingsCategoryMonthDay.value);
   if (!name) return;
   const exists = state.categories.some((cat) => normalizeName(cat.name) === normalizeName(name));
   if (exists) {
     showToast("Category already exists");
     return;
   }
-  state.categories.push(createCategory(name, limitValue));
+  state.categories.push(createCategory(name, limitValue, monthDayValue));
   ui.settingsCategoryName.value = "";
   ui.settingsCategoryLimit.value = "";
+  ui.settingsCategoryMonthDay.value = "";
   saveAndRender();
   showToast("Category added");
 };
@@ -209,8 +249,8 @@ const renderOnboardingChips = (items) => {
     chip.className = `chip ${item.selected ? "active" : ""}`;
     chip.textContent = item.name;
 
-    const limitWrap = document.createElement("div");
-    limitWrap.className = "chip-input";
+    const inputsWrap = document.createElement("div");
+    inputsWrap.className = "chip-inputs";
 
     const limitInput = document.createElement("input");
     limitInput.type = "number";
@@ -221,10 +261,17 @@ const renderOnboardingChips = (items) => {
     limitInput.setAttribute("aria-label", `${item.name} limit`);
     limitInput.disabled = !item.selected;
 
+    const dayInput = document.createElement("input");
+    dayInput.type = "date";
+    dayInput.value = monthDayToDateValue(item.monthDay);
+    dayInput.setAttribute("aria-label", `${item.name} due date`);
+    dayInput.disabled = !item.selected;
+
     chip.addEventListener("click", () => {
       item.selected = !item.selected;
       chip.classList.toggle("active", item.selected);
       limitInput.disabled = !item.selected;
+      dayInput.disabled = !item.selected;
     });
 
     limitInput.addEventListener("input", (event) => {
@@ -232,8 +279,50 @@ const renderOnboardingChips = (items) => {
       item.limit = Number.isFinite(value) ? value : item.limit;
     });
 
-    limitWrap.appendChild(limitInput);
-    row.append(chip, limitWrap);
+    dayInput.addEventListener("input", (event) => {
+      item.monthDay = getMonthDayFromDateString(event.target.value);
+    });
+
+    inputsWrap.append(limitInput, dayInput);
+
+    const actionsWrap = document.createElement("div");
+    actionsWrap.className = "chip-actions";
+
+    const renameBtn = document.createElement("button");
+    renameBtn.type = "button";
+    renameBtn.className = "btn ghost";
+    renameBtn.textContent = "Rename";
+    renameBtn.addEventListener("click", () => {
+      const nextName = window.prompt("Rename category", item.name);
+      if (!nextName) return;
+      const trimmed = nextName.trim();
+      if (!trimmed) return;
+      const exists = items.some((cat) => cat.id !== item.id && normalizeName(cat.name) === normalizeName(trimmed));
+      if (exists) {
+        showToast("Category already exists");
+        return;
+      }
+      item.name = trimmed;
+      renderOnboardingChips(items);
+      showToast("Category renamed");
+    });
+
+    const removeBtn = document.createElement("button");
+    removeBtn.type = "button";
+    removeBtn.className = "btn ghost danger";
+    removeBtn.textContent = "Remove";
+    removeBtn.addEventListener("click", () => {
+      const index = items.findIndex((cat) => cat.id === item.id);
+      if (index >= 0) {
+        items.splice(index, 1);
+        renderOnboardingChips(items);
+        showToast("Category removed");
+      }
+    });
+
+    actionsWrap.append(renameBtn, removeBtn);
+
+    row.append(chip, inputsWrap, actionsWrap);
     ui.categoryChips.appendChild(row);
   });
 };
@@ -301,12 +390,17 @@ const renderDashboard = () => {
 
   const periodExpenses = filterExpensesForPeriod(period);
   const totalSpent = sumExpenses(periodExpenses);
+  const totalCategorySpent = state.categories.reduce(
+    (sum, category) => sum + getCategorySpent(category.id, period),
+    0
+  );
   const totalIncome = state.income || 0;
   const remaining = totalIncome - totalSpent;
 
   ui.totalIncome.textContent = formatCurrency(totalIncome);
   ui.totalSpent.textContent = formatCurrency(totalSpent);
   ui.totalRemaining.textContent = formatCurrency(remaining);
+  ui.totalCategorySpent.textContent = formatCurrency(totalCategorySpent);
 
   const totalLimit = state.categories.reduce((sum, cat) => sum + (cat.limit || 0), 0);
   const overBy = totalLimit > 0 ? totalSpent - totalLimit : totalSpent - totalIncome;
@@ -326,6 +420,7 @@ const renderDashboard = () => {
   state.categories.forEach((category) => {
     const spent = getCategorySpent(category.id, period);
     const percent = category.limit ? Math.min(100, (spent / category.limit) * 100) : 0;
+    const remaining = (category.limit || 0) - spent;
     const card = document.createElement("div");
     card.className = "category-card";
 
@@ -337,8 +432,8 @@ const renderDashboard = () => {
         <div class="progress-fill" style="width: ${percent}%;"></div>
       </div>
       <div class="progress-meta">
-        <span>${formatCurrency(spent)} spent</span>
-        <span>${formatCurrency(category.limit || 0)} limit</span>
+        <span>What's left ${formatCurrency(remaining)} of ${formatCurrency(category.limit || 0)}</span>
+        <span>Spent ${formatCurrency(spent)}</span>
       </div>
     `;
 
@@ -348,7 +443,11 @@ const renderDashboard = () => {
     editBtn.className = "btn ghost";
     editBtn.textContent = "Edit";
     editBtn.addEventListener("click", () => editCategory(category.id));
-    action.appendChild(editBtn);
+    const removeBtn = document.createElement("button");
+    removeBtn.className = "btn ghost danger";
+    removeBtn.textContent = "Remove";
+    removeBtn.addEventListener("click", () => removeCategory(category.id));
+    action.append(editBtn, removeBtn);
 
     card.appendChild(info);
     card.appendChild(action);
@@ -510,6 +609,8 @@ const editCategory = (categoryId) => {
   editingCategoryId = categoryId;
   ui.editCategoryName.value = category.name;
   ui.editCategoryLimit.value = Number.isFinite(category.limit) ? category.limit : 0;
+  const baseDate = state.viewingDate ? new Date(state.viewingDate) : new Date();
+  ui.editCategoryMonthDay.value = monthDayToDateValue(category.monthDay, baseDate);
   ui.editCategoryDialog.showModal();
 };
 
@@ -524,11 +625,26 @@ const handleEditCategorySubmit = (event) => {
   const name = ui.editCategoryName.value.trim();
   if (!name) return;
   const limitValue = Number(ui.editCategoryLimit.value);
+  const monthDayValue = getMonthDayFromDateString(ui.editCategoryMonthDay.value);
   category.name = name;
   category.limit = Number.isFinite(limitValue) ? limitValue : category.limit;
+  category.monthDay = normalizeMonthDay(monthDayValue);
   saveAndRender();
   closeEditCategoryDialog();
   showToast("Category updated");
+};
+
+const removeCategory = (categoryId) => {
+  const category = state.categories.find((cat) => cat.id === categoryId);
+  if (!category) return;
+  const proceed = window.confirm(
+    `Remove ${category.name}? This will delete its expenses and cannot be undone.`
+  );
+  if (!proceed) return;
+  state.categories = state.categories.filter((cat) => cat.id !== categoryId);
+  state.expenses = state.expenses.filter((item) => item.categoryId !== categoryId);
+  saveAndRender();
+  showToast("Category removed");
 };
 
 const deleteExpense = (expenseId) => {
@@ -575,7 +691,12 @@ const handleOnboardingSubmit = (event) => {
   state.incomeFrequency = incomeFrequency;
   state.incomeStartDate = incomeFrequency === "biweekly" ? incomeStartDate : todayIso();
   state.goal = goal || "";
-  state.categories = selected.map((item) => ({ id: item.id, name: item.name, limit: item.limit }));
+  state.categories = selected.map((item) => ({
+    id: item.id,
+    name: item.name,
+    limit: item.limit,
+    monthDay: normalizeMonthDay(item.monthDay)
+  }));
   state.onboardingComplete = true;
 
   saveAndRender();
@@ -663,6 +784,48 @@ const applySettings = () => {
   ui.darkMode.checked = state.settings.darkMode;
 };
 
+const applyAccentPreview = () => {
+  const color = ui.accentColor.value;
+  if (!color) return;
+  state.settings.accent = color;
+  setAccent(color);
+  saveState();
+  showToast("Accent updated");
+};
+
+const submitFeedback = () => {
+  if (!FEEDBACK_EMAIL || FEEDBACK_EMAIL.includes("your-email")) {
+    showToast("Set your feedback email in app.js");
+    return;
+  }
+  const subject = encodeURIComponent("Budget Buddy Feedback");
+  const body = encodeURIComponent("Hi! Here's my feedback:\n\n");
+  window.location.href = `mailto:${FEEDBACK_EMAIL}?subject=${subject}&body=${body}`;
+};
+
+const openUpdateNotes = () => {
+  ui.updateNotesDialog.showModal();
+  ui.updateNotesContent.textContent = "Loading latest notes...";
+  if (!GITHUB_REPO || GITHUB_REPO.includes("YOUR_GITHUB_REPO")) {
+    ui.updateNotesContent.textContent = "Set your GitHub repo in app.js to load update notes.";
+    return;
+  }
+  fetch(`https://api.github.com/repos/${GITHUB_REPO}/releases/latest`)
+    .then((response) => {
+      if (!response.ok) {
+        throw new Error("Release not found");
+      }
+      return response.json();
+    })
+    .then((data) => {
+      const notes = data.body || "No release notes were provided.";
+      ui.updateNotesContent.textContent = notes;
+    })
+    .catch(() => {
+      ui.updateNotesContent.textContent = "Could not load update notes. Check your repository settings.";
+    });
+};
+
 const escapeCsvField = (field) => {
   const str = String(field || "");
   if (str.includes(",") || str.includes('"') || str.includes("\n")) {
@@ -734,6 +897,12 @@ const onboardingCategories = defaultCategorySelection();
 
 const init = () => {
   loadState();
+  if (state.categories.length) {
+    state.categories = state.categories.map((category) => ({
+      ...category,
+      monthDay: normalizeMonthDay(category.monthDay)
+    }));
+  }
   if (!state.incomeStartDate) {
     state.incomeStartDate = todayIso();
   }
@@ -769,6 +938,10 @@ const init = () => {
   ui.settingsForm.addEventListener("submit", handleSettingsSubmit);
   ui.settingsFrequency.addEventListener("change", (event) => toggleStartDateFields(event.target.value));
   ui.incomeFrequency.addEventListener("change", (event) => toggleStartDateFields(event.target.value));
+  ui.applyAccent.addEventListener("click", applyAccentPreview);
+  ui.submitFeedback.addEventListener("click", submitFeedback);
+  ui.openUpdateNotes.addEventListener("click", openUpdateNotes);
+  ui.closeUpdateNotes.addEventListener("click", () => ui.updateNotesDialog.close());
 
   ui.exportCsv.addEventListener("click", exportCsv);
   ui.exportJson.addEventListener("click", exportJson);
