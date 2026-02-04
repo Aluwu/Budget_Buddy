@@ -62,6 +62,7 @@ const ui = {
   deleteExpense: document.getElementById("deleteExpense"),
   openAddExpense: document.getElementById("openAddExpense"),
   closeExpense: document.getElementById("closeExpense"),
+  refreshApp: document.getElementById("refreshApp"),
   openSettings: document.getElementById("openSettings"),
   settingsDialog: document.getElementById("settingsDialog"),
   settingsForm: document.getElementById("settingsForm"),
@@ -157,6 +158,55 @@ const showToast = (message) => {
   ui.toast.textContent = message;
   ui.toast.classList.add("show");
   setTimeout(() => ui.toast.classList.remove("show"), 2200);
+};
+
+const checkForUpdate = (registration) =>
+  new Promise((resolve) => {
+    if (registration.waiting) {
+      resolve(true);
+      return;
+    }
+    const installing = registration.installing;
+    if (!installing) {
+      resolve(false);
+      return;
+    }
+    const onStateChange = () => {
+      if (installing.state === "installed") {
+        installing.removeEventListener("statechange", onStateChange);
+        resolve(!!navigator.serviceWorker.controller);
+      }
+    };
+    installing.addEventListener("statechange", onStateChange);
+    setTimeout(() => resolve(false), 4000);
+  });
+
+const refreshAppForUpdates = async () => {
+  if (!navigator.onLine) {
+    showToast("You will need to be connected to the internet to update the app.");
+    return;
+  }
+  if (!("serviceWorker" in navigator)) {
+    showToast("You're using the latest version");
+    return;
+  }
+  const registration = await navigator.serviceWorker.getRegistration();
+  if (!registration) {
+    showToast("You're using the latest version");
+    return;
+  }
+  const hadWaiting = !!registration.waiting;
+  await registration.update();
+  const updated = await checkForUpdate(registration);
+  if (updated || hadWaiting || registration.waiting) {
+    if (registration.waiting) {
+      registration.waiting.postMessage({ type: "SKIP_WAITING" });
+    }
+    showToast("Your app has been updated");
+    setTimeout(() => window.location.reload(), 700);
+    return;
+  }
+  showToast("You're using the latest version");
 };
 
 const defaultCategorySelection = () =>
@@ -915,6 +965,7 @@ const init = () => {
 
   ui.onboardingForm.addEventListener("submit", handleOnboardingSubmit);
   ui.openAddExpense.addEventListener("click", () => openExpenseDialog());
+  ui.refreshApp.addEventListener("click", refreshAppForUpdates);
   ui.closeExpense.addEventListener("click", closeExpenseDialog);
   ui.expenseForm.addEventListener("submit", handleExpenseSubmit);
   ui.deleteExpense.addEventListener("click", () => {
