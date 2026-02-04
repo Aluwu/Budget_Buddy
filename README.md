@@ -1,20 +1,22 @@
 # Budget Buddy
 
-A fast, Apple-inspired budgeting web app built with pure HTML, CSS, and JavaScript.
+A clean, fast budgeting web app that makes tracking spending feel effortless.
 
 ## Features
-- 2-minute onboarding with defaults
-- Monthly overview and category limits
-- Add/edit/delete expenses in one flow
-- Transactions with search and filter
-- Insights and goals (progressive)
-- Local storage persistence
-- Export CSV and local backups
-- Offline-friendly (service worker)
-- High contrast and font scaling controls
+-  **Instant Onboarding** — Get started in under 2 minutes with smart defaults.
+-  **Budget Tracking** — Real-time "What's left" calculations for all your categories.
+-  **Flexible Cycles** — Support for both monthly and bi-weekly views.
+-  **Search & Filter** — Find any transaction instantly with built-in filtering.
+-  **Progressive Insights** — Your analytics and goals grow as you add data.
+-  **Privacy First** — No cloud, no tracking. Your data stays in your browser's local storage.
+-  **Data Ownership** — Export your data to CSV/JSON or import backups anytime.
+-  **Offline Support** — Fully functional offline thanks to Service Worker integration.
+-  **Customizable UI** — High contrast modes, font scaling, and custom accent colors.
 
-## Use
-Open index.html in a browser. All data is stored locally in your browser.
+### Live Version
+The easiest way to use Budget Buddy is through the hosted version:
+**[Launch Budget Buddy →](https://aluwu.github.io/Budget_Buddy/)**
 
 ## Privacy
 Your data stays on this device unless you export it.
+
