@@ -867,16 +867,25 @@ const openUpdateNotes = () => {
     ui.updateNotesContent.textContent = "Set your GitHub repo in app.js to load update notes.";
     return;
   }
-  fetch(`https://api.github.com/repos/${GITHUB_REPO}/releases/latest`)
+  fetch(`https://api.github.com/repos/${GITHUB_REPO}/commits?per_page=1`)
     .then((response) => {
       if (!response.ok) {
-        throw new Error("Release not found");
+        throw new Error("Commit not found");
       }
       return response.json();
     })
     .then((data) => {
-      const notes = data.body || "No release notes were provided.";
-      ui.updateNotesContent.textContent = notes;
+      const commit = data[0];
+      if (!commit) {
+        ui.updateNotesContent.textContent = "No commits found.";
+        return;
+      }
+      const message = commit.commit?.message || "Latest update";
+      const author = commit.commit?.author?.name || "Unknown author";
+      const dateRaw = commit.commit?.author?.date || new Date().toISOString();
+      const date = new Date(dateRaw).toLocaleString();
+      const link = commit.html_url || "";
+      ui.updateNotesContent.textContent = `${message}\n\nBy ${author} on ${date}${link ? `\n${link}` : ""}`;
     })
     .catch(() => {
       ui.updateNotesContent.textContent = "Could not load update notes. Check your repository settings.";
