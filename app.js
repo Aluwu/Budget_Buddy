@@ -906,11 +906,7 @@ const openUpdateNotes = () => {
         return;
       }
       const message = commit.commit?.message || "Latest update";
-      const author = commit.commit?.author?.name || "Unknown author";
-      const dateRaw = commit.commit?.author?.date || new Date().toISOString();
-      const date = new Date(dateRaw).toLocaleString();
-      const link = commit.html_url || "";
-      ui.updateNotesContent.textContent = `${message}\n\nBy ${author} on ${date}${link ? `\n${link}` : ""}`;
+      ui.updateNotesContent.textContent = message;
     })
     .catch(() => {
       ui.updateNotesContent.textContent = "Could not load update notes. Check your repository settings.";
