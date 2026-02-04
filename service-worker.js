@@ -18,12 +18,35 @@ self.addEventListener("activate", (event) => {
 
 self.addEventListener("fetch", (event) => {
   event.respondWith(
-    caches.match(event.request).then((response) => response || fetch(event.request))
+    fetch(event.request)
+      .then((response) => {
+        const responseClone = response.clone();
+        caches.open(CACHE_NAME).then((cache) => cache.put(event.request, responseClone));
+        return response;
+      })
+      .catch(() => caches.match(event.request))
   );
 });
 
 self.addEventListener("message", (event) => {
   if (event.data && event.data.type === "SKIP_WAITING") {
     self.skipWaiting();
+  }
+  if (event.data && event.data.type === "FORCE_REFRESH") {
+    event.waitUntil(
+      caches.open(CACHE_NAME).then((cache) =>
+        Promise.all(
+          ASSETS.map((asset) =>
+            fetch(new Request(asset, { cache: "reload" }))
+              .then((response) => cache.put(asset, response.clone()))
+              .catch(() => null)
+          )
+        )
+      ).then(() => {
+        if (event.source) {
+          event.source.postMessage({ type: "CACHE_UPDATED" });
+        }
+      })
+    );
   }
 });

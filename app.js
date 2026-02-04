@@ -199,6 +199,9 @@ const refreshAppForUpdates = async () => {
   const hadWaiting = !!registration.waiting;
   await registration.update();
   const updated = await checkForUpdate(registration);
+  if (navigator.serviceWorker.controller) {
+    navigator.serviceWorker.controller.postMessage({ type: "FORCE_REFRESH" });
+  }
   if (updated || hadWaiting || registration.waiting) {
     if (registration.waiting) {
       registration.waiting.postMessage({ type: "SKIP_WAITING" });
@@ -1015,6 +1018,14 @@ const init = () => {
   });
 
   registerServiceWorker();
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.addEventListener("message", (event) => {
+      if (event.data && event.data.type === "CACHE_UPDATED") {
+        showToast("Your app has been updated");
+        setTimeout(() => window.location.reload(), 700);
+      }
+    });
+  }
 };
 
 init();
